@@ -1,0 +1,1056 @@
+
+WINDOWS SERVER 2025 ACTIVE DIRECTORY HOME LAB
+
+PROJECT OVERVIEW
+
+This project documents my hands-on Active Directory home lab built using UTM on a Mac mini.
+
+The purpose of this lab was to build a small business-style Windows environment and practice real-world IT Support, Help Desk, System Administration, Active Directory, DNS, Group Policy, user management, authentication, networking, and security troubleshooting.
+
+LAB ENVIRONMENT
+
+Host:
+- Mac mini
+- 24 GB RAM
+- UTM virtualization software
+- External SSD used for VM storage
+
+Domain Controller:
+- Windows Server 2025
+- Hostname: DC01
+- Domain: matthias.local
+- IP Address: 192.168.64.2
+- Subnet Mask: 255.255.255.0
+- Default Gateway: 192.168.64.1
+- Preferred DNS: 192.168.64.2
+
+Windows Client:
+- Windows 11 Pro
+- Domain: matthias.local
+- DNS: 192.168.64.2
+
+--------------------------------------------------
+
+1. WINDOWS SERVER 2025 INSTALLATION
+
+I created a Windows Server 2025 virtual machine using UTM.
+
+After installing Windows Server, I completed the initial Windows configuration.
+
+I renamed the server:
+
+DC01
+
+The server was restarted after changing the hostname.
+
+--------------------------------------------------
+
+2. CONFIGURING A STATIC IP ADDRESS
+
+I configured the Domain Controller with a static IPv4 address.
+
+IP Address:
+192.168.64.2
+
+Subnet Mask:
+255.255.255.0
+
+Default Gateway:
+192.168.64.1
+
+Preferred DNS:
+192.168.64.2
+
+The Domain Controller uses itself as the DNS server because Active Directory depends heavily on DNS for domain and service discovery.
+
+--------------------------------------------------
+
+3. INSTALLING ACTIVE DIRECTORY DOMAIN SERVICES
+
+I opened:
+
+Server Manager
+→ Add Roles and Features
+
+I installed:
+
+Active Directory Domain Services (AD DS)
+
+After the installation completed, I selected the option to promote the server to a Domain Controller.
+
+I selected:
+
+Add a new forest
+
+Domain:
+
+matthias.local
+
+I enabled:
+
+- DNS Server
+- Global Catalog
+
+I left RODC disabled.
+
+I created a Directory Services Restore Mode password.
+
+I left the default Active Directory database, log files, and SYSVOL locations unchanged.
+
+The server was restarted after the promotion completed.
+
+--------------------------------------------------
+
+4. VERIFYING ACTIVE DIRECTORY
+
+After restarting the server, I opened:
+
+Active Directory Users and Computers
+
+I verified that the domain existed:
+
+matthias.local
+
+I also verified that the Domain Controller was:
+
+DC01
+
+This confirmed that Active Directory Domain Services was installed successfully.
+
+--------------------------------------------------
+
+5. CONFIGURING DNS
+
+I opened DNS Manager.
+
+I verified that the DNS zone existed:
+
+matthias.local
+
+I tested DNS using:
+
+nslookup matthias.local
+
+The domain resolved to:
+
+192.168.64.2
+
+I also tested the Active Directory LDAP SRV record:
+
+nslookup -type=SRV _ldap._tcp.dc._msdcs.matthias.local 192.168.64.2
+
+The result showed DC01 and 192.168.64.2.
+
+This confirmed that the Domain Controller was advertising the required Active Directory services.
+
+--------------------------------------------------
+
+6. DNS TROUBLESHOOTING
+
+During testing, nslookup showed:
+
+Server: Unknown
+
+Even though:
+
+matthias.local
+
+successfully resolved to:
+
+192.168.64.2
+
+The "Unknown" result was related to reverse DNS/name resolution.
+
+Since the domain itself resolved correctly and the Active Directory SRV record worked, DNS was functioning well enough for the lab.
+
+--------------------------------------------------
+
+7. CREATING ORGANIZATIONAL UNITS
+
+I opened:
+
+Active Directory Users and Computers
+
+I created:
+
+IT
+
+and:
+
+Help Desk
+
+The structure became:
+
+matthias.local
+|
+|-- IT
+|
+|-- Help Desk
+
+These OUs allow users and policies to be organized by department or role.
+
+--------------------------------------------------
+
+8. CREATING USERS
+
+I created the following test users.
+
+Jordan Williams
+
+Username:
+jwill​​iams
+
+OU:
+IT
+
+Alex Johnson
+
+Username:
+ajohnson
+
+OU:
+Help Desk
+
+These accounts were used to simulate employees in a business environment.
+
+--------------------------------------------------
+
+9. CREATING SECURITY GROUPS
+
+I created:
+
+IT Support
+
+Type:
+Global Security
+
+Jordan Williams was added to the IT Support group.
+
+I also created:
+
+Help Desk
+
+Type:
+Global Security
+
+Alex Johnson was added to the Help Desk group.
+
+Security groups allow permissions and policies to be assigned based on user roles.
+
+--------------------------------------------------
+
+10. CREATING GROUP POLICY
+
+I created a Group Policy named:
+
+Help Desk Workstation Policy
+
+The policy was linked to:
+
+Help Desk
+
+OU.
+
+I configured:
+
+Computer Configuration
+→ Policies
+→ Windows Settings
+→ Security Settings
+→ Local Policies
+→ Security Options
+
+Setting:
+
+Interactive logon: Do not display last signed-in
+
+I enabled this setting.
+
+I also practiced configuring password policy settings.
+
+Minimum password length:
+
+10 characters
+
+--------------------------------------------------
+
+11. CREATING THE WINDOWS 11 CLIENT
+
+I created a Windows 11 Pro virtual machine using UTM.
+
+The Windows 11 client was placed on the same virtual network as the Domain Controller.
+
+The client was configured to use the Domain Controller for DNS.
+
+DNS:
+
+192.168.64.2
+
+--------------------------------------------------
+
+12. CLIENT NETWORK TROUBLESHOOTING
+
+Before joining the domain, I tested connectivity from the Windows 11 client.
+
+I opened Command Prompt.
+
+I ran:
+
+ping 192.168.64.2
+
+The client received replies from the Domain Controller.
+
+This confirmed basic network connectivity.
+
+--------------------------------------------------
+
+13. CHECKING THE CLIENT IP CONFIGURATION
+
+I ran:
+
+ipconfig
+
+I checked:
+
+- IPv4 address
+- Subnet mask
+- Default gateway
+- DNS server
+
+The most important setting for Active Directory was DNS.
+
+The Windows 11 client needed to use:
+
+192.168.64.2
+
+as its DNS server.
+
+--------------------------------------------------
+
+14. DOMAIN DISCOVERY TROUBLESHOOTING
+
+The client initially had trouble locating the Active Directory domain.
+
+I tested domain discovery using:
+
+nltest /dsgetdc:matthias.local
+
+The client eventually returned:
+
+DC01.matthias.local
+
+Address:
+
+192.168.64.2
+
+Domain:
+
+matthias.local
+
+This confirmed that the client could locate the Domain Controller.
+
+--------------------------------------------------
+
+15. IPV6 DNS TROUBLESHOOTING
+
+One of the problems during the domain setup was that the client was using IPv6 DNS.
+
+This caused problems with domain discovery and joining the Active Directory domain.
+
+I opened:
+
+Control Panel
+→ Network and Internet
+→ Network and Sharing Center
+→ Change adapter settings
+
+I opened the Ethernet adapter properties.
+
+I disabled:
+
+Internet Protocol Version 6 (TCP/IPv6)
+
+I then checked the IPv4 settings.
+
+The preferred DNS server was:
+
+192.168.64.2
+
+After making the change, I tested:
+
+nltest /dsgetdc:matthias.local
+
+The client successfully found:
+
+DC01.matthias.local
+
+This fixed the domain discovery issue.
+
+--------------------------------------------------
+
+16. JOINING WINDOWS 11 TO THE DOMAIN
+
+After DNS and domain discovery were working, I joined the Windows 11 client to:
+
+matthias.local
+
+Windows requested domain credentials.
+
+I used:
+
+MATTHIAS\Administrator
+
+and the Domain Administrator password.
+
+Windows displayed:
+
+Welcome to the matthias.local domain
+
+The computer was restarted.
+
+--------------------------------------------------
+
+17. DOMAIN LOGIN TROUBLESHOOTING
+
+After restarting, I logged into the Windows 11 client using:
+
+ajohnson
+
+The login was successful.
+
+I ran:
+
+whoami
+
+The expected result was:
+
+matthias\ajohnson
+
+I also ran:
+
+echo %logonserver%
+
+The expected result was:
+
+\\DC01
+
+This confirmed that the Windows 11 client was authenticating against the Domain Controller.
+
+--------------------------------------------------
+
+18. ACTIVE DIRECTORY AUTHENTICATION VERIFICATION
+
+The final authentication process was:
+
+Windows 11 Client
+→ DNS
+→ DC01
+→ matthias.local
+→ Active Directory
+→ ajohnson
+
+The successful login confirmed that Active Directory authentication was working.
+
+--------------------------------------------------
+
+19. HELP DESK SECURITY SCENARIO: COMPROMISED ACCOUNT
+
+SCENARIO:
+
+A user's Active Directory account is suspected of being compromised.
+
+The first priority is to prevent additional unauthorized access.
+
+STEP 1: DISABLE THE ACCOUNT
+
+On DC01:
+
+Active Directory Users and Computers
+→ matthias.local
+→ Help Desk
+
+I located:
+
+ajohnson
+
+I right-clicked the account.
+
+I selected:
+
+Disable Account
+
+This prevents the account from being used to authenticate.
+
+STEP 2: RESET THE PASSWORD
+
+I right-clicked:
+
+ajohnson
+
+I selected:
+
+Reset Password
+
+I created a new temporary password.
+
+I selected:
+
+User must change password at next logon
+
+This requires the user to create a new password when they next log in.
+
+STEP 3: CHECK SUSPICIOUS ACTIVITY
+
+I opened:
+
+Event Viewer
+
+Then:
+
+Windows Logs
+→ Security
+
+I reviewed the security logs.
+
+Important Event IDs:
+
+4624 = Successful logon
+
+4625 = Failed logon
+
+4724 = Password reset
+
+4725 = Account disabled
+
+4740 = Account locked out
+
+These events can help determine whether suspicious authentication activity occurred.
+
+STEP 4: MFA
+
+The on-premises Active Directory lab does not provide MFA by itself.
+
+In a real organization, MFA would normally be handled through an identity provider such as Microsoft Entra ID.
+
+For the lab, I documented the MFA requirement instead of pretending that on-premises Active Directory provided MFA.
+
+STEP 5: DOCUMENT AND ESCALATE
+
+I documented:
+
+User:
+Alex Johnson
+
+Username:
+ajohnson
+
+Issue:
+Suspected account compromise
+
+Actions:
+- Account disabled
+- Password reset
+- Security logs reviewed
+- MFA status checked
+- Incident documented
+- Incident escalated
+
+--------------------------------------------------
+
+20. HELP DESK SCENARIO: LOCKED USER ACCOUNT
+
+SCENARIO:
+
+A user reports:
+
+"I can't log into my computer."
+
+The troubleshooting process is:
+
+1. Find the user's account.
+2. Check whether the account is locked.
+3. Unlock the account.
+4. Reset the password if necessary.
+5. Have the user log in again.
+6. Verify the issue is resolved.
+
+--------------------------------------------------
+
+21. CHECKING WHETHER AN ACCOUNT IS LOCKED
+
+On DC01:
+
+Active Directory Users and Computers
+→ matthias.local
+→ Help Desk
+
+I located:
+
+ajohnson
+
+I opened:
+
+Properties
+→ Account
+
+I checked the account status.
+
+If the account is locked, I can unlock it from the Account settings or use the available Unlock Account option.
+
+--------------------------------------------------
+
+22. UNLOCKING AN ACCOUNT
+
+If the account is locked:
+
+Right-click:
+
+ajohnson
+
+Select:
+
+Properties
+→ Account
+
+I removed the lockout condition and applied the change.
+
+If available, I can also use:
+
+Right-click user
+→ Unlock Account
+
+After unlocking the account, I tested the user's login again.
+
+--------------------------------------------------
+
+23. RESETTING A LOCKED USER'S PASSWORD
+
+If unlocking the account does not solve the problem:
+
+Right-click:
+
+ajohnson
+
+Select:
+
+Reset Password
+
+Create a temporary password.
+
+If necessary, select:
+
+User must change password at next logon
+
+Then test the login again.
+
+--------------------------------------------------
+
+24. ACCOUNT LOCKOUT POLICY
+
+To create a realistic account lockout scenario, I can configure an Account Lockout Policy.
+
+Example settings:
+
+Account lockout threshold:
+3 invalid logon attempts
+
+Account lockout duration:
+15 minutes
+
+Reset account lockout counter after:
+15 minutes
+
+The purpose of this policy is to prevent unlimited password guessing attempts.
+
+--------------------------------------------------
+
+25. TESTING ACCOUNT LOCKOUT
+
+After configuring the policy, I can intentionally enter the wrong password multiple times on the Windows 11 client.
+
+After the configured number of failed attempts, the account becomes locked.
+
+I then return to:
+
+Active Directory Users and Computers
+
+I locate:
+
+ajohnson
+
+I check the account status.
+
+I unlock the account.
+
+--------------------------------------------------
+
+26. VERIFYING THE ACCOUNT AFTER UNLOCKING
+
+I return to the Windows 11 client.
+
+I log in using:
+
+ajohnson
+
+I run:
+
+whoami
+
+Expected result:
+
+matthias\ajohnson
+
+I run:
+
+echo %logonserver%
+
+Expected result:
+
+\\DC01
+
+This confirms that the account can authenticate against the Domain Controller again.
+
+--------------------------------------------------
+
+27. TROUBLESHOOTING A USER WHO CANNOT LOG IN
+
+If a user cannot log in, I would troubleshoot in this order:
+
+1. Verify the username.
+2. Verify the password.
+3. Check whether the account is disabled.
+4. Check whether the account is locked.
+5. Check whether the password has expired.
+6. Check whether the user must change their password.
+7. Check the client's network connection.
+8. Check whether the client can reach DC01.
+9. Check DNS.
+10. Verify the computer is still joined to the domain.
+11. Check Event Viewer.
+12. Reset the password if necessary.
+13. Unlock or enable the account if necessary.
+14. Test the login again.
+15. Document the resolution.
+
+--------------------------------------------------
+
+28. TROUBLESHOOTING NO INTERNET ACCESS
+
+I practiced a basic Help Desk network troubleshooting workflow.
+
+STEP 1:
+
+Check whether Ethernet or Wi-Fi is connected.
+
+STEP 2:
+
+Run:
+
+ipconfig
+
+Check the IPv4 address.
+
+If the address begins with:
+
+169.254.x.x
+
+the computer may not have received a valid IP address.
+
+STEP 3:
+
+Ping the gateway:
+
+ping 192.168.64.1
+
+If this fails, investigate the local network connection.
+
+STEP 4:
+
+Ping the Domain Controller:
+
+ping 192.168.64.2
+
+If this fails, investigate the connection between the client and DC01.
+
+STEP 5:
+
+Test Internet connectivity:
+
+ping 8.8.8.8
+
+If this works but websites do not load, investigate DNS.
+
+STEP 6:
+
+Test DNS:
+
+nslookup google.com
+
+If DNS fails, investigate the DNS configuration.
+
+--------------------------------------------------
+
+29. DNS TROUBLESHOOTING
+
+For Active Directory problems, DNS should be one of the first things checked.
+
+I run:
+
+ipconfig /all
+
+I verify the DNS server is:
+
+192.168.64.2
+
+I then run:
+
+nslookup matthias.local
+
+I also test the Active Directory SRV record:
+
+nslookup -type=SRV _ldap._tcp.dc._msdcs.matthias.local 192.168.64.2
+
+If the records cannot be found, I investigate:
+
+- DNS service
+- DNS zone
+- Domain Controller
+- Network connection
+- Client DNS configuration
+
+--------------------------------------------------
+
+30. DOMAIN JOIN TROUBLESHOOTING
+
+If a Windows client cannot join the domain, I would check:
+
+1. Is the client connected to the correct network?
+2. Can the client ping DC01?
+3. Is the client using DC01 as its DNS server?
+4. Does nslookup resolve matthias.local?
+5. Can nltest locate the Domain Controller?
+6. Is DC01 running?
+7. Is Active Directory Domain Services running?
+8. Is DNS running?
+9. Is the domain name correct?
+10. Is the Domain Administrator password correct?
+11. Is the client already joined to another domain?
+12. Is the Windows edition capable of joining a domain?
+
+Commands:
+
+ipconfig /all
+
+ping 192.168.64.2
+
+nslookup matthias.local
+
+nltest /dsgetdc:matthias.local
+
+--------------------------------------------------
+
+31. GROUP POLICY TROUBLESHOOTING
+
+If Group Policy is not applying, I would check:
+
+1. Is the user in the correct OU?
+2. Is the computer in the correct OU?
+3. Is the GPO linked to the correct OU?
+4. Is the GPO enabled?
+5. Is the setting under User Configuration or Computer Configuration?
+6. Is the client connected to the domain?
+7. Can the client reach DC01?
+
+I can force a Group Policy update using:
+
+gpupdate /force
+
+I can check the applied policies using:
+
+gpresult /r
+
+This shows which Group Policies are being applied to the computer and user.
+
+--------------------------------------------------
+
+32. ACTIVE DIRECTORY USER TROUBLESHOOTING
+
+When troubleshooting a user account, I would check:
+
+- Username
+- Password
+- Account status
+- Disabled account
+- Locked account
+- Password expiration
+- Password change requirement
+- Group membership
+- OU placement
+- Group Policy
+- Network connectivity
+- DNS
+- Domain Controller availability
+- Security event logs
+
+I would document each troubleshooting step and the result.
+
+--------------------------------------------------
+
+33. EVENT VIEWER TROUBLESHOOTING
+
+I used:
+
+Event Viewer
+→ Windows Logs
+→ Security
+
+Important events:
+
+4624
+Successful logon
+
+4625
+Failed logon
+
+4724
+Password reset
+
+4725
+Account disabled
+
+4740
+Account locked out
+
+These events can help identify authentication problems and suspicious activity.
+
+--------------------------------------------------
+
+34. POWERSHELL ACTIVE DIRECTORY PRACTICE
+
+I also practiced commands that can be used to manage Active Directory.
+
+Check a user:
+
+Get-ADUser ajohnson
+
+Unlock an account:
+
+Unlock-ADAccount -Identity ajohnson
+
+Disable an account:
+
+Disable-ADAccount -Identity ajohnson
+
+Enable an account:
+
+Enable-ADAccount -Identity ajohnson
+
+Check group membership:
+
+Get-ADGroupMember "Help Desk"
+
+These commands can help automate repetitive Active Directory administration tasks.
+
+--------------------------------------------------
+
+35. MY GENERAL HELP DESK TROUBLESHOOTING PROCESS
+
+When troubleshooting an Active Directory issue, my process is:
+
+1. Identify the user's problem.
+2. Ask what changed.
+3. Reproduce the problem if possible.
+4. Check the user's account.
+5. Check whether the account is enabled.
+6. Check whether the account is locked.
+7. Check the password.
+8. Check password expiration.
+9. Check group membership.
+10. Check OU placement.
+11. Check Group Policy.
+12. Check the client's IP address.
+13. Check DNS.
+14. Ping the Domain Controller.
+15. Test domain discovery.
+16. Check Event Viewer.
+17. Make the appropriate change.
+18. Test the solution.
+19. Confirm the issue is resolved.
+20. Document the ticket.
+21. Escalate if necessary.
+
+--------------------------------------------------
+
+36. WHAT I LEARNED
+
+This project gave me hands-on experience with:
+
+- Windows Server 2025
+- Active Directory
+- Domain Controllers
+- DNS
+- Windows 11
+- Domain joining
+- User management
+- Security Groups
+- Organizational Units
+- Group Policy
+- Password policies
+- Account lockout
+- Account security
+- Event Viewer
+- Windows Security Logs
+- PowerShell
+- Network troubleshooting
+- Domain authentication
+- Help Desk troubleshooting
+- Security incident response
+
+The biggest lesson from this lab was that many IT problems are connected.
+
+For example:
+
+DNS problems can prevent domain joining.
+
+Network problems can prevent authentication.
+
+Active Directory problems can prevent users from logging in.
+
+Group Policy problems can affect a user's workstation.
+
+Event Viewer can provide information about what happened.
+
+Instead of only studying these concepts for certifications, I built and troubleshot my own environment to practice them hands-on.
+
+--------------------------------------------------
+
+37. FUTURE LABS
+
+I plan to continue expanding the environment with:
+
+- Additional Windows clients
+- More users
+- More departments
+- File server
+- Shared folders
+- NTFS permissions
+- Printer management
+- DHCP
+- Advanced DNS troubleshooting
+- PowerShell automation
+- Security policies
+- SIEM integration
+- Microsoft Entra ID
+- MFA
+- Backup and recovery
+- Additional Help Desk ticket scenarios
+
+--------------------------------------------------
+
+CONCLUSION
+
+This Active Directory home lab is an ongoing project designed to build practical IT Support and System Administration experience.
+
+I am using the lab to practice building, troubleshooting, documenting, and securing a Windows domain environment.
+
+The goal is to turn the concepts I have studied into hands-on troubleshooting experience that can be applied to real-world Help Desk and IT Support environments.
